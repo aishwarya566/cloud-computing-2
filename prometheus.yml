@@ -3,21 +3,16 @@ global:
   evaluation_interval: 15s
 
 rule_files:
-  - "/etc/prometheus/alert_rules.yml"
+  - /etc/prometheus/alert_rules.yml
 
 scrape_configs:
 
-  # Prometheus itself
   - job_name: "prometheus"
-
     static_configs:
       - targets:
           - "prometheus:9090"
 
-
-  # Azure VM system metrics
   - job_name: "node-exporter"
-
     static_configs:
       - targets:
           - "node-exporter:9100"
