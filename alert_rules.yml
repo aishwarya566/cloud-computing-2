@@ -4,111 +4,47 @@ groups:
 
     rules:
 
-      # --------------------------------
-      # VM DOWN
-      # --------------------------------
-
-      - alert: InstanceDown
-
-        expr: up{job="node-exporter"} == 0
-
-        for: 1m
-
-        labels:
-          severity: critical
-
-        annotations:
-          summary: "Monitoring target is down"
-          description: "Node Exporter on {{ $labels.instance }} is not responding."
-
-
-      # --------------------------------
-      # HIGH CPU
-      # --------------------------------
-
       - alert: HighCPUUsage
-
-        expr: |
-          100 -
-          (
-            avg by(instance)
-            (
-              rate(node_cpu_seconds_total{
-                job="node-exporter",
-                mode="idle"
-              }[5m])
-            ) * 100
-          ) > 80
-
-        for: 5m
-
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 2m
         labels:
           severity: warning
-
         annotations:
-          summary: "High CPU usage"
+          summary: "High CPU usage detected"
           description: "CPU usage on {{ $labels.instance }} is above 80%."
 
-
-      # --------------------------------
-      # HIGH MEMORY
-      # --------------------------------
+      - alert: CriticalCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical CPU usage detected"
+          description: "CPU usage on {{ $labels.instance }} is above 90%."
 
       - alert: HighMemoryUsage
-
-        expr: |
-          (
-            1 -
-            (
-              node_memory_MemAvailable_bytes{
-                job="node-exporter"
-              }
-              /
-              node_memory_MemTotal_bytes{
-                job="node-exporter"
-              }
-            )
-          ) * 100 > 80
-
-        for: 5m
-
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+        for: 2m
         labels:
           severity: warning
-
         annotations:
-          summary: "High memory usage"
+          summary: "High memory usage detected"
           description: "Memory usage on {{ $labels.instance }} is above 80%."
 
-
-      # --------------------------------
-      # LOW DISK SPACE
-      # --------------------------------
+      - alert: CriticalMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical memory usage detected"
+          description: "Memory usage on {{ $labels.instance }} is above 90%."
 
       - alert: LowDiskSpace
-
-        expr: |
-          (
-            1 -
-            (
-              node_filesystem_avail_bytes{
-                job="node-exporter",
-                mountpoint="/",
-                fstype!~"tmpfs|overlay"
-              }
-              /
-              node_filesystem_size_bytes{
-                job="node-exporter",
-                mountpoint="/",
-                fstype!~"tmpfs|overlay"
-              }
-            )
-          ) * 100 > 85
-
+        expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) * 100 < 15
         for: 5m
-
         labels:
           severity: warning
-
         annotations:
           summary: "Low disk space"
-          description: "Root filesystem usage on {{ $labels.instance }} is above 85%."
+          description: "Available disk space on {{ $labels.instance }} is below 15%."
